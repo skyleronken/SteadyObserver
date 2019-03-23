@@ -6,6 +6,7 @@ from slackclient import SlackClient
 from aiohttp import web
 from mongoengine import *
 from models import Task, Result
+import configparser
 import logging
 from pytz import utc
 from threading import Lock
@@ -317,6 +318,13 @@ async def delete_result(request):
 
 
 if __name__ == '__main__':
+
+    config = configparser.ConfigParser()
+    config.read_file(open('config.ini'))
+
+    listen_port = config.get('steadyobserver', 'listen_port')
+    listen_host = config.get('steadyobserver', 'listen_host')
+
     app = web.Application()
     app.add_routes([web.get('/', get_time),
                     web.get('/time/', get_time),
@@ -331,7 +339,7 @@ if __name__ == '__main__':
                     web.delete('/task/{id}', delete_task),
                     web.delete('/result/{id}', delete_result)])
 
-    connect('steadyobserver', host='localhost', port=27017)
+    connect('steadyobserver', host=listen_host, port=listen_port)
 
     job_stores = {'default': MongoDBJobStore()}
     executors = {'default': ThreadPoolExecutor(20)}
