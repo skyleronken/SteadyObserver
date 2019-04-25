@@ -355,4 +355,5 @@ if __name__ == '__main__':
     scheduler.print_jobs()
     scheduler_lock = Lock()
 
+    print("SteadyObserver listening...")
     web.run_app(app)
