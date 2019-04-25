@@ -278,7 +278,7 @@ async def get_result(request):
 
 
 async def post_result(request):
-    logging.info("Create Task")
+    logging.info("Create Result for Task")
 
     data = await request.json()
     tid = request.match_info['id']
