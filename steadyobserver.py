@@ -327,8 +327,8 @@ if __name__ == '__main__':
 
     mongo_port = int(config.get('mongo', 'listen_port'))
     mongo_host = config.get('mongo', 'listen_host')
-    mongo_pass = config.get('mongo', 'password')
-    mongo_user = config.get('mongo', 'username')
+    #mongo_pass = config.get('mongo', 'password')
+    #mongo_user = config.get('mongo', 'username')
 
     app = web.Application()
     app.add_routes([web.get('/', get_time),
@@ -346,7 +346,7 @@ if __name__ == '__main__':
 
     connect('steadyobserver', host=listen_host, port=listen_port)
 
-    job_stores = {'default': MongoDBJobStore(host=mongo_host, port=mongo_port, password=mongo_pass, username=mongo_user)}
+    job_stores = {'default': MongoDBJobStore(host=mongo_host, port=mongo_port,)} # password=mongo_pass, username=mongo_user)}
     executors = {'default': ThreadPoolExecutor(20)}
     job_defaults = {'coalesce': False, 'max_instances': 3}
 
