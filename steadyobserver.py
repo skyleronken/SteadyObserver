@@ -341,7 +341,7 @@ if __name__ == '__main__':
 
     connect('steadyobserver', host=listen_host, port=listen_port)
 
-    job_stores = {'default': MongoDBJobStore()}
+    job_stores = {'default': MongoDBJobStore(host='mongo', port=27017)}
     executors = {'default': ThreadPoolExecutor(20)}
     job_defaults = {'coalesce': False, 'max_instances': 3}
 
