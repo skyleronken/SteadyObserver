@@ -348,10 +348,10 @@ if __name__ == '__main__':
                     web.delete('/task/{id}', delete_task),
                     web.delete('/result/{id}', delete_result)])
 
-    connect('steadyobserver', host=listen_host, port=listen_port)
+    connect('steadyobserver', host=mongo_host, port=mongo_port)
 
     print("Building scheduler data stores")
-    job_stores = {'default': MongoDBJobStore(host=mongo_host, port=mongo_port,)} # password=mongo_pass, username=mongo_user)}
+    job_stores = {'default': MongoDBJobStore(host=mongo_host, port=mongo_port)} # password=mongo_pass, username=mongo_user)}
     executors = {'default': ThreadPoolExecutor(20)}
     job_defaults = {'coalesce': False, 'max_instances': 3}
 
@@ -362,4 +362,4 @@ if __name__ == '__main__':
     scheduler_lock = Lock()
 
     print("SteadyObserver listening...")
-    web.run_app(app)
+    web.run_app(app, host=listen_host, port=listen_port)
