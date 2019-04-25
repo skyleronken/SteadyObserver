@@ -322,7 +322,7 @@ if __name__ == '__main__':
     config = configparser.ConfigParser()
     config.read_file(open('config.ini'))
 
-    listen_port = config.get('steadyobserver', 'listen_port')
+    listen_port = int(config.get('steadyobserver', 'listen_port'))
     listen_host = config.get('steadyobserver', 'listen_host')
 
     app = web.Application()
