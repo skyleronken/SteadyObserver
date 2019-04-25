@@ -319,6 +319,9 @@ async def delete_result(request):
 
 if __name__ == '__main__':
 
+    print("Starting SteadyObserver")
+
+    print("Parsing config file")
     config = configparser.ConfigParser()
     config.read_file(open('config.ini'))
 
@@ -330,6 +333,7 @@ if __name__ == '__main__':
     #mongo_pass = config.get('mongo', 'password')
     #mongo_user = config.get('mongo', 'username')
 
+    print("Building API")
     app = web.Application()
     app.add_routes([web.get('/', get_time),
                     web.get('/time/', get_time),
@@ -346,11 +350,13 @@ if __name__ == '__main__':
 
     connect('steadyobserver', host=listen_host, port=listen_port)
 
+    print("Building scheduler data stores")
     job_stores = {'default': MongoDBJobStore(host=mongo_host, port=mongo_port,)} # password=mongo_pass, username=mongo_user)}
     executors = {'default': ThreadPoolExecutor(20)}
     job_defaults = {'coalesce': False, 'max_instances': 3}
 
     scheduler = AsyncIOScheduler(jobstores=job_stores, executors=executors, job_defaults=job_defaults, timezone=utc)
+    print("Starting scheduler")
     scheduler.start()
     scheduler.print_jobs()
     scheduler_lock = Lock()
