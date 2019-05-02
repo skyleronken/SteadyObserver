@@ -4,5 +4,6 @@ mongoengine
 pytz
 requests
 jsondiff
+websocket
 rocketchat_API
 slackclient
