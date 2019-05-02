@@ -13,10 +13,22 @@ from threading import Lock
 from datetime import datetime
 import requests
 import json
+import ast
 import jsondiff
 
 scheduler_lock = None
 scheduler = None
+
+headers={
+            "Access-Control-Expose-Headers": "Content-Range",
+            'Access-Control-Allow-Headers':'Content-Type',
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE"
+        }
+
+
+async def send_headers(request):
+    return web.Response(headers=headers)
 
 
 def get_latest_result_for_task(tid):
@@ -25,13 +37,16 @@ def get_latest_result_for_task(tid):
     return latest
 
 
-def send_request(r_type, task_id, method, url=None, body=None):
+def send_request(r_type, task_id, method, url, body=None, headers=None):
     print("Send request")
 
+    if not headers:
+        headers = {'Content-Type': 'application/json'}
+
     if method == "GET":
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
     elif method == "POST":
-        response = requests.post(url, body)
+        response = requests.post(url, body, headers=headers)
 
     if r_type == "sync":
         data = response.json()
@@ -108,15 +123,54 @@ def send_notification(message, notification_type, notification_args):
 # API Endpoints
 
 async def get_time(request):
-    return web.json_response({"time": "{}".format(datetime.now(utc).strftime("%Y-%m-%d %H:%M:%S"))})
+    return web.json_response({"time": "{}".format(datetime.now(utc).strftime("%Y-%m-%d %H:%M:%S"))}, headers=headers)
 
 
 async def get_tasks(request):
     logging.info("Get Tasks")
 
     tasks = Task.objects()
+    lheaders = headers
 
-    return web.json_response(tasks.to_json(), dumps=str)
+    filter = None
+    range = None
+    sort = None
+    if 'filter' in request.rel_url.query:
+        filter = ast.literal_eval(request.rel_url.query['filter'])
+
+    if 'range' in request.rel_url.query:
+        range = ast.literal_eval(request.rel_url.query['range'])
+
+    if 'sort' in request.rel_url.query:
+        sort = ast.literal_eval(request.rel_url.query['sort'])
+
+    task_count = tasks.count()
+
+    if filter:
+        pass
+
+    if sort:
+        field = sort[0]
+        asc_desc = sort[1]
+
+        if asc_desc == "ASC":
+            field = "+{}".format(field)
+        else:
+            field = "-{}".format(field)
+
+        tasks = tasks.order_by(field)
+
+    if range:
+        first = int(range[0])
+        last = int(range[1])
+
+        offset = first
+        number = last - first
+        tasks = tasks.skip(offset).limit(number)
+        lheaders["Content-Range"] = "tasks {}-{}/{}".format(first, last, task_count)
+
+    tasks = tasks.exclude('scheduler_id')
+    return web.json_response(tasks.to_json(), dumps=str, headers=lheaders)
 
 
 async def get_task(request):
@@ -130,7 +184,7 @@ async def get_task(request):
     except DoesNotExist:
         return web.json_response({})
 
-    return web.json_response(task.to_json(), dumps=str)
+    return web.json_response(task.to_json(), dumps=str, headers=headers)
 
 
 async def create_task(request):
@@ -225,7 +279,7 @@ async def delete_task(request):
     except DoesNotExist:
         return web.json_response({"success": False, "message": "Does not exist"})
 
-    return web.json_response({"success": True})
+    return web.json_response({"success": True}, headers=headers)
 
 
 async def suspend_task(request):
@@ -241,7 +295,7 @@ async def suspend_task(request):
     except DoesNotExist:
         return web.json_response({"success": False, "message": "Does not exist"})
 
-    return web.json_response({"success": True})
+    return web.json_response({"success": True}, headers=headers)
 
 
 async def resume_task(request):
@@ -255,9 +309,9 @@ async def resume_task(request):
         task.status = "active"
         task.save()
     except DoesNotExist:
-        return web.json_response({"success": False, "message": "Does not exist"})
+        return web.json_response({"success": False, "message": "Does not exist"}, headers=headers)
 
-    return web.json_response({"success": True})
+    return web.json_response({"success": True}, headers=headers)
 
 
 async def get_results(request):
@@ -266,7 +320,7 @@ async def get_results(request):
     tid = request.match_info['id']
     results = Result.objects(task=tid)
 
-    return web.json_response(results.to_json(), dumps=str)
+    return web.json_response(results.to_json(), dumps=str, headers=headers)
 
 
 async def get_result(request):
@@ -276,9 +330,9 @@ async def get_result(request):
     try:
         result = Result.objects.get(id=rid)
     except DoesNotExist:
-        return web.json_response({})
+        return web.json_response({}, headers=headers)
 
-    return web.json_response(result.to_json(), dumps=str)
+    return web.json_response(result.to_json(), dumps=str, headers=headers)
 
 
 async def post_result(request):
@@ -289,7 +343,7 @@ async def post_result(request):
     try:
         task = Task.objects.get(id=tid)
     except DoesNotExist:
-        return web.json_response({})
+        return web.json_response({}, headers=headers)
 
     # Get latest result
     latest_result = get_latest_result_for_task(tid)
@@ -316,9 +370,9 @@ async def delete_result(request):
         result = Result.objects.get(id=rid)
         result.delete()
     except DoesNotExist:
-        return web.json_response({"success": False, "message": "Does not exist"})
+        return web.json_response({"success": False, "message": "Does not exist"}, headers=headers)
 
-    return web.json_response({"success": True})
+    return web.json_response({"success": True}, headers=headers)
 
 
 if __name__ == '__main__':
@@ -339,18 +393,19 @@ if __name__ == '__main__':
 
     print("Building API")
     app = web.Application()
-    app.add_routes([web.get('/', get_time),
-                    web.get('/time/', get_time),
-                    web.get('/tasks/', get_tasks),
-                    web.get('/task/{id}', get_task),
-                    web.get('/task/{id}/results', get_results),
-                    web.get('/result/{id}', get_result),
-                    web.post('/task/', create_task),
-                    web.post('/task/{id}/suspend', suspend_task),
-                    web.post('/task/{id}/resume', resume_task),
-                    web.post('/task/{id}/result', post_result),
-                    web.delete('/task/{id}', delete_task),
-                    web.delete('/result/{id}', delete_result)])
+    app.add_routes([web.options('/{tail:.*}', send_headers),
+                    web.get('/', get_time),
+                    web.get('/time', get_time),
+                    web.get('/tasks', get_tasks),
+                    web.get('/tasks/{id}', get_task),
+                    web.get('/tasks/{id}/results', get_results),
+                    web.get('/results/{id}', get_result),
+                    web.post('/tasks', create_task),
+                    web.post('/tasks/{id}/suspend', suspend_task),
+                    web.post('/tasks/{id}/resume', resume_task),
+                    web.post('/tasks/{id}/result', post_result),
+                    web.delete('/tasks/{id}', delete_task),
+                    web.delete('/results/{id}', delete_result)])
 
     connect('steadyobserver', host=mongo_host, port=mongo_port)
 

@@ -7,3 +7,4 @@ jsondiff
 websocket-client
 rocketchat_API
 slackclient
+mongoengine_goodjson

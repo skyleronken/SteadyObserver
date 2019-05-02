@@ -1,14 +1,15 @@
 from mongoengine import *
+import mongoengine_goodjson as gj
 import datetime
 
 
-class Result(Document):
+class Result(gj.Document):
     creation_date = DateTimeField(default=datetime.datetime.utcnow)
     data = StringField(required=True)
     task = ReferenceField('Task')
 
 
-class Task(Document):
+class Task(gj.Document):
     description = StringField(required=False, max_length=200)
     scheduler_id = StringField(required=False)
     task_type = StringField(required=True, default='request', choices=['request'])
