@@ -25,9 +25,16 @@ def get_latest_result_for_task(tid):
     return latest
 
 
-def send_request(r_type, task_id, url):
+def send_request(r_type, task_id, args):
     print("Send request")
-    response = requests.get(url)
+    method = args[0]
+    url = args[1]
+    body = args[2]
+
+    if method == "GET":
+        response = requests.get(url)
+    elif method == "POST":
+        response = requests.post(url, body)
 
     if r_type == "sync":
         data = response.json()
