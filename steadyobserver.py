@@ -174,6 +174,20 @@ async def get_task(request):
     return web.json_response(task.to_json(), dumps=str)
 
 
+async def get_task_with_uuid(request):
+    logging.info("Get Task with UUID")
+
+    tid = request.match_info['uuid']
+    try:
+        task = Task.objects.get(uuid=tid)
+        job = scheduler.get_job(task.scheduler_id)
+        task.next_run_time = job.next_run_time.strftime("%Y-%m-%d %H:%M:%S")
+    except DoesNotExist:
+        return web.json_response({})
+
+    return web.json_response(task.to_json(), dumps=str)
+
+
 async def create_task(request):
     logging.info("Create Task")
 
@@ -222,7 +236,8 @@ async def create_task(request):
         time_interval=time_interval,
         time_multiplier=time_multiplier,
         diff=data.get('diff', None),
-        status='active'
+        status='active',
+        uuid=data.get('uuid', None)
     )
     new_task.save()
 
@@ -386,6 +401,7 @@ if __name__ == '__main__':
                     web.get('/tasks/{id}', get_task),
                     web.get('/tasks/{id}/results', get_results),
                     web.get('/results/{id}', get_result),
+                    web.get('/tasks/uuid/{uuid}', get_task_with_uuid),
                     web.post('/tasks', create_task),
                     web.post('/tasks/{id}/suspend', suspend_task),
                     web.post('/tasks/{id}/resume', resume_task),

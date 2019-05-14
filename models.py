@@ -11,6 +11,7 @@ class Result(gj.Document):
 
 class Task(gj.Document):
     description = StringField(required=False, max_length=200)
+    uuid = StringField(required=False)
     scheduler_id = StringField(required=False)
     task_type = StringField(required=True, default='request', choices=['request'])
     task_args = ListField(StringField(), required=True, default=list)
