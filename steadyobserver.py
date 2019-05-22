@@ -19,6 +19,8 @@ import jsondiff
 scheduler_lock = None
 scheduler = None
 
+response_headers = {"Access-Control-Allow-Origin": "*"}
+
 
 def get_latest_result_for_task(tid):
     latest = Result.objects(task=tid).order_by('-creation_date').first()
@@ -157,7 +159,7 @@ async def get_tasks(request):
         tasks = tasks.skip(offset).limit(number)
 
     tasks = tasks.exclude('scheduler_id')
-    return web.json_response(tasks.to_json(), dumps=str)
+    return web.json_response(tasks.to_json(), dumps=str, headers=response_headers)
 
 
 async def get_task(request):
@@ -171,7 +173,7 @@ async def get_task(request):
     except DoesNotExist:
         return web.json_response({})
 
-    return web.json_response(task.to_json(), dumps=str)
+    return web.json_response(task.to_json(), dumps=str, headers=response_headers)
 
 
 async def get_task_with_uuid(request):
@@ -185,7 +187,7 @@ async def get_task_with_uuid(request):
     except DoesNotExist:
         return web.json_response({})
 
-    return web.json_response(task.to_json(), dumps=str)
+    return web.json_response(task.to_json(), dumps=str, headers=response_headers)
 
 
 async def create_task(request):
@@ -260,7 +262,7 @@ async def create_task(request):
     new_task.scheduler_id = job.id
     new_task.save()
 
-    return web.json_response(new_task.to_json(), dumps=str)
+    return web.json_response(new_task.to_json(), dumps=str, headers=response_headers)
 
 
 async def delete_task(request):
@@ -279,9 +281,9 @@ async def delete_task(request):
         results.delete()
         task.delete()
     except DoesNotExist:
-        return web.json_response({"success": False, "message": "Does not exist"})
+        return web.json_response({"success": False, "message": "Does not exist"}, headers=response_headers)
 
-    return web.json_response({"success": True})
+    return web.json_response({"success": True}, headers=response_headers)
 
 
 async def suspend_task(request):
@@ -295,9 +297,9 @@ async def suspend_task(request):
         task.status = "suspended"
         task.save()
     except DoesNotExist:
-        return web.json_response({"success": False, "message": "Does not exist"})
+        return web.json_response({"success": False, "message": "Does not exist"}, headers=response_headers)
 
-    return web.json_response({"success": True})
+    return web.json_response({"success": True}, headers=response_headers)
 
 
 async def resume_task(request):
@@ -311,9 +313,9 @@ async def resume_task(request):
         task.status = "active"
         task.save()
     except DoesNotExist:
-        return web.json_response({"success": False, "message": "Does not exist"})
+        return web.json_response({"success": False, "message": "Does not exist"}, headers=response_headers)
 
-    return web.json_response({"success": True})
+    return web.json_response({"success": True}, headers=response_headers)
 
 
 async def get_results(request):
@@ -322,7 +324,7 @@ async def get_results(request):
     tid = request.match_info['id']
     results = Result.objects(task=tid)
 
-    return web.json_response(results.to_json(), dumps=str)
+    return web.json_response(results.to_json(), dumps=str, headers=response_headers)
 
 
 async def get_result(request):
@@ -332,9 +334,9 @@ async def get_result(request):
     try:
         result = Result.objects.get(id=rid)
     except DoesNotExist:
-        return web.json_response({})
+        return web.json_response({}, headers=response_headers)
 
-    return web.json_response(result.to_json(), dumps=str)
+    return web.json_response(result.to_json(), dumps=str, headers=response_headers)
 
 
 async def post_result(request):
@@ -345,7 +347,7 @@ async def post_result(request):
     try:
         task = Task.objects.get(id=tid)
     except DoesNotExist:
-        return web.json_response({})
+        return web.json_response({}, headers=response_headers)
 
     # Get latest result
     latest_result = get_latest_result_for_task(tid)
@@ -361,7 +363,7 @@ async def post_result(request):
 
     diff_results(new_result.data, latest_result.data, task.notification_type, task.notification_args)
 
-    return web.json_response(new_result.to_json(), dumps=str)
+    return web.json_response(new_result.to_json(), dumps=str, headers=response_headers)
 
 
 async def delete_result(request):
@@ -372,9 +374,9 @@ async def delete_result(request):
         result = Result.objects.get(id=rid)
         result.delete()
     except DoesNotExist:
-        return web.json_response({"success": False, "message": "Does not exist"})
+        return web.json_response({"success": False, "message": "Does not exist"}, headers=response_headers)
 
-    return web.json_response({"success": True})
+    return web.json_response({"success": True}, headers=response_headers)
 
 
 if __name__ == '__main__':
