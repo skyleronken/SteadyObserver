@@ -112,6 +112,12 @@ def send_notification(message, notification_type, notification_args):
 
 
 # API Endpoints
+async def handle_options(requeast):
+    options_headers = {"Access-Control-Allow-Methods":"POST, GET, OPTIONS, DELETE",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Headers": "content-type"}
+    return web.Response(headers=options_headers)
+
 
 async def get_time(request):
     return web.json_response({"time": "{}".format(datetime.now(utc).strftime("%Y-%m-%d %H:%M:%S"))})
@@ -397,7 +403,8 @@ if __name__ == '__main__':
 
     print("Building API")
     app = web.Application()
-    app.add_routes([web.get('/', get_time),
+    app.add_routes([web.options('/{tail:.*}', handle_options),
+                    web.get('/', get_time),
                     web.get('/time', get_time),
                     web.get('/tasks', get_tasks),
                     web.get('/tasks/{id}', get_task),
